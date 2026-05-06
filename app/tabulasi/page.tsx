@@ -74,12 +74,12 @@ export default function TabulasiPage() {
       .then(res => res.json())
       .then(data => {
         setResult(data);
-        
+
         const userDownloadCount = data.data.reduce((acc: Record<string, { kabkot: string; user: string; downloads: number }>, item: DownloadItem) => {
           const user = item.user || 'unknown';
           const kabkotCode = item.kabkot || '-';
           const key = `${kabkotCode}-${user}`;
-          
+
           if (!acc[key]) {
             acc[key] = { kabkot: kabkotCode, user, downloads: 0 };
           }
@@ -94,7 +94,7 @@ export default function TabulasiPage() {
         Object.keys(KABKOT_DICTIONARY).sort().forEach(code => {
           const name = KABKOT_DICTIONARY[code];
           const usersInKabkot = Object.values(userDownloadCount).filter(u => u.kabkot === code);
-          
+
           if (usersInKabkot.length > 0) {
             usersInKabkot.forEach(u => {
               finalData.push({
@@ -123,7 +123,7 @@ export default function TabulasiPage() {
             });
           }
         });
-        
+
         setSummaryData(finalData);
         setLoading(false);
       })
@@ -147,12 +147,12 @@ export default function TabulasiPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Tabulasi Rekapitulasi per User</h1>
         <div className="flex flex-col gap-1 mb-8">
           <p className="text-gray-600">
-            Data terakhir diperbarui: {new Date().toLocaleString('id-ID', { 
-              weekday: 'long', 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric', 
-              hour: '2-digit', 
+            Data terakhir diperbarui: {new Date().toLocaleString('id-ID', {
+              weekday: 'long',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
               minute: '2-digit',
               timeZone: 'Asia/Jakarta'
             }).replace(/\./g, ':')} WIB

@@ -13,7 +13,7 @@ export async function login(prevState: any, formData: FormData) {
 
   try {
     const apiKey = 'cff0d1e8a59e84cc093561082f6cae5103a3cd1f19882913c993e72ff6092c93';
-    
+
     const res = await fetch('https://jateng.web.bps.go.id/apiconnect/login', {
       method: 'POST',
       headers: {
@@ -47,7 +47,7 @@ export async function login(prevState: any, formData: FormData) {
     }
 
     await createSession(data);
-    
+
   } catch (error: any) {
     return { error: `Terjadi kesalahan internal: ${error.message}` };
   }
