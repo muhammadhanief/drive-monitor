@@ -1,6 +1,3 @@
-"use client";
-
-import { useState, useEffect } from 'react';
 import { SummaryTable } from '@/app/components/SummaryTable';
 
 const KABKOT_DICTIONARY: Record<string, string> = {
@@ -64,81 +61,73 @@ interface UserSummary {
   downloads: number | string;
 }
 
-export default function TabulasiPage() {
-  const [result, setResult] = useState<ApiResponse>({ success: true, data: [] });
-  const [loading, setLoading] = useState(true);
-  const [summaryData, setSummaryData] = useState<UserSummary[]>([]);
+async function getDownloadData(): Promise<ApiResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  try {
+    const res = await fetch(`${baseUrl}/api/download-activity`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) return { success: false, data: [], error: `Failed to fetch: ${res.statusText}` };
+    return res.json();
+  } catch (error: any) {
+    return { success: false, data: [], error: error.message };
+  }
+}
 
-  useEffect(() => {
-    fetch('/api/download-activity')
-      .then(res => res.json())
-      .then(data => {
-        setResult(data);
+export default async function TabulasiPage() {
+  const result = await getDownloadData();
+  
+  let summaryData: UserSummary[] = [];
+  
+  if (result.success) {
+    const userDownloadCount = result.data.reduce((acc: Record<string, { kabkot: string; user: string; downloads: number }>, item: DownloadItem) => {
+      const user = item.user || 'unknown';
+      const kabkotCode = item.kabkot || '-';
+      const key = `${kabkotCode}-${user}`;
+      
+      if (!acc[key]) {
+        acc[key] = { kabkot: kabkotCode, user, downloads: 0 };
+      }
+      acc[key].downloads += 1;
+      return acc;
+    }, {} as Record<string, { kabkot: string; user: string; downloads: number }>);
 
-        const userDownloadCount = data.data.reduce((acc: Record<string, { kabkot: string; user: string; downloads: number }>, item: DownloadItem) => {
-          const user = item.user || 'unknown';
-          const kabkotCode = item.kabkot || '-';
-          const key = `${kabkotCode}-${user}`;
+    const userValues = Object.values(userDownloadCount) as { kabkot: string; user: string; downloads: number }[];
+    const seenKeys = new Set<string>();
 
-          if (!acc[key]) {
-            acc[key] = { kabkot: kabkotCode, user, downloads: 0 };
-          }
-          acc[key].downloads += 1;
-          return acc;
-        }, {} as Record<string, { kabkot: string; user: string; downloads: number }>);
-
-        const finalData: UserSummary[] = [];
-        const seenKeys = new Set<string>();
-
-        // Process dictionary items
-        Object.keys(KABKOT_DICTIONARY).sort().forEach(code => {
-          const name = KABKOT_DICTIONARY[code];
-          const usersInKabkot = Object.values(userDownloadCount).filter(u => u.kabkot === code);
-
-          if (usersInKabkot.length > 0) {
-            usersInKabkot.forEach(u => {
-              finalData.push({
-                kabkot: `${code} - ${name}`,
-                user: u.user,
-                downloads: u.downloads
-              });
-              seenKeys.add(`${u.kabkot}-${u.user}`);
-            });
-          } else {
-            finalData.push({
-              kabkot: `${code} - ${name}`,
-              user: '',
-              downloads: ''
-            });
-          }
+    // Process dictionary items
+    Object.keys(KABKOT_DICTIONARY).sort().forEach(code => {
+      const name = KABKOT_DICTIONARY[code];
+      const usersInKabkot = userValues.filter(u => u.kabkot === code);
+      
+      if (usersInKabkot.length > 0) {
+        usersInKabkot.forEach(u => {
+          summaryData.push({
+            kabkot: `${code} - ${name}`,
+            user: u.user,
+            downloads: u.downloads
+          });
+          seenKeys.add(`${u.kabkot}-${u.user}`);
         });
-
-        // Add any items from data not in dictionary
-        Object.values(userDownloadCount).forEach(u => {
-          if (!seenKeys.has(`${u.kabkot}-${u.user}`)) {
-            finalData.push({
-              kabkot: u.kabkot,
-              user: u.user,
-              downloads: u.downloads
-            });
-          }
+      } else {
+        summaryData.push({
+          kabkot: `${code} - ${name}`,
+          user: '',
+          downloads: ''
         });
+      }
+    });
 
-        setSummaryData(finalData);
-        setLoading(false);
-      })
-      .catch(err => {
-        setResult({ success: false, data: [], error: err.message });
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
+    // Add any items from data not in dictionary
+    userValues.forEach(u => {
+      if (!seenKeys.has(`${u.kabkot}-${u.user}`)) {
+        summaryData.push({
+          kabkot: u.kabkot,
+          user: u.user,
+          downloads: u.downloads
+        });
+      }
+    });
   }
 
   return (
@@ -147,12 +136,12 @@ export default function TabulasiPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Tabulasi Rekapitulasi per User</h1>
         <div className="flex flex-col gap-1 mb-8">
           <p className="text-gray-600">
-            Data terakhir diperbarui: {new Date().toLocaleString('id-ID', {
-              weekday: 'long',
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
+            Data terakhir diperbarui: {new Date().toLocaleString('id-ID', { 
+              weekday: 'long', 
+              day: '2-digit', 
+              month: '2-digit', 
+              year: 'numeric', 
+              hour: '2-digit', 
               minute: '2-digit',
               timeZone: 'Asia/Jakarta'
             }).replace(/\./g, ':')} WIB
