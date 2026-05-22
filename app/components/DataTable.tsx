@@ -5,7 +5,6 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   useReactTable,
@@ -13,6 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileDown, ArrowUpDown } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface DownloadItem {
   id: number;
@@ -23,9 +23,23 @@ interface DownloadItem {
   kabkot?: string;
 }
 
-export function DataTable({ data }: { data: DownloadItem[] }) {
+export function DataTable({
+  data,
+  page,
+  limit,
+  total,
+  totalPages
+}: {
+  data: DownloadItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
 
   const columns: ColumnDef<DownloadItem>[] = [
     {
@@ -91,7 +105,6 @@ export function DataTable({ data }: { data: DownloadItem[] }) {
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
@@ -99,11 +112,6 @@ export function DataTable({ data }: { data: DownloadItem[] }) {
     state: {
       sorting,
       globalFilter,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
     },
   });
 
@@ -192,13 +200,12 @@ export function DataTable({ data }: { data: DownloadItem[] }) {
       <div className="flex items-center justify-between px-6 py-3 border-t">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-700">
-            Halaman <span className="font-semibold">{table.getState().pagination.pageIndex + 1}</span> dari{" "}
-            <span className="font-semibold">{table.getPageCount() || 1}</span>
+            Halaman {page} dari {totalPages || 1} ({total} data)
           </span>
           <select
-            value={table.getState().pagination.pageSize}
+            value={limit}
             onChange={(e) => {
-              table.setPageSize(Number(e.target.value));
+              router.push(`${pathname}?page=1&limit=${e.target.value}`);
             }}
             className="ml-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer"
           >
@@ -212,32 +219,32 @@ export function DataTable({ data }: { data: DownloadItem[] }) {
         
         <div className="flex items-center gap-2">
           <button
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => router.push(`${pathname}?page=1&limit=${limit}`)}
+            disabled={page <= 1}
             className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title="Halaman Pertama"
           >
             <ChevronsLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => router.push(`${pathname}?page=${page - 1}&limit=${limit}`)}
+            disabled={page <= 1}
             className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title="Halaman Sebelumnya"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => router.push(`${pathname}?page=${page + 1}&limit=${limit}`)}
+            disabled={page >= totalPages}
             className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title="Halaman Selanjutnya"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
           <button
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
+            onClick={() => router.push(`${pathname}?page=${totalPages}&limit=${limit}`)}
+            disabled={page >= totalPages}
             className="p-1 rounded-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title="Halaman Terakhir"
           >

@@ -12,7 +12,8 @@ import {
     ChevronRight,
     ChevronLeft,
     ClipboardList,
-    Table
+    Table,
+    Database
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { logout } from "@/app/actions/auth";
@@ -32,6 +33,7 @@ export default function Sidebar() {
         { name: "Grafik", icon: BarChart3, path: "/grafik" },
         { name: "Tabulasi", icon: ClipboardList, path: "/tabulasi" },
         { name: "Aktivitas", icon: Table, path: "/activity" },
+        { name: "Aktivitas (All)", icon: Database, path: "/all-activity" },
     ];
 
     const NavButton = ({ item }: { item: { name: string; icon: any; path: string } }) => {
